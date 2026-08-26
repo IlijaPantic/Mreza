@@ -35,7 +35,7 @@ export function SurveyPage() {
             Postani <Accent>čvor</Accent> u mreži
           </>
         }
-        lead="Mediji su pod kontrolom režima. Zato moramo sami da se organizujemo — svaki profil, svaka stranica i svaki razgovor je kanal do ljudi do kojih informacija drugačije ne stiže. Učešće je u potpunosti dobrovoljno."
+        lead="Mediji su pod većinskom kontrolom režima. Zato moramo sami da se organizujemo — svaki profil, svaka stranica i svaki razgovor je kanal do ljudi do kojih informacija drugačije ne stiže. Učešće je u potpunosti dobrovoljno."
       />
 
       <main className="flex-1">

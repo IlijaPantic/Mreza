@@ -26,8 +26,8 @@ export function NetworkPicker({
         Koje društvene mreže imaš?
       </legend>
       <p className="mt-1 text-sm text-slate-600">
-        Označi one koje si spreman/na da dobrovoljno koristiš u ovoj kampanji.
-        Možeš i da preskočiš ovaj deo.
+        Označi one mreže gde imaš lične profile koje si spreman/na da
+        dobrovoljno koristiš u ovoj kampanji.
       </p>
 
       <div className="mt-4 flex flex-wrap gap-2.5">

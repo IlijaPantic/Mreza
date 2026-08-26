@@ -558,9 +558,9 @@ func buildSubmissionsCSV(rows []dbgen.CampaignSubmission) ([]byte, error) {
 	w := csv.NewWriter(&buf)
 
 	if err := w.Write([]string{
-		"id", "datum", "ime", "prezime", "email", "telefon",
-		"uloge", "drustvene_mreze", "veci_domet", "link_veceg_dometa",
-		"saglasnost",
+		"ID", "Datum", "Ime", "Prezime", "Email", "Telefon",
+		"Uloge", "Društvene mreže", "Veći domet", "Link većeg dometa",
+		"Saglasnost",
 	}); err != nil {
 		return nil, err
 	}
