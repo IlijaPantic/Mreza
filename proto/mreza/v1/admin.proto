@@ -1,0 +1,154 @@
+syntax = "proto3";
+
+package mreza.v1;
+
+option go_package = "git.izbori.xyz/trsr/mreza-anketa/internal/gen/mreza/v1;mrezav1";
+
+import "google/protobuf/timestamp.proto";
+import "mreza/v1/survey.proto";
+
+// AdminService — interni API za pregled prijava i upravljanje admin pristupom.
+// Sve metode zahtevaju validnu admin sesiju (cookie auth, enforce-uje interceptor).
+// Invite/Revoke/Reactivate dodatno zahtevaju role='admin' (viewer ne moze).
+service AdminService {
+  rpc GetMe(GetMeRequest) returns (GetMeResponse);
+  rpc ListSubmissions(ListSubmissionsRequest) returns (ListSubmissionsResponse);
+  rpc GetSubmission(GetSubmissionRequest) returns (GetSubmissionResponse);
+  rpc ExportSubmissionsCSV(ExportSubmissionsCSVRequest) returns (ExportSubmissionsCSVResponse);
+  rpc ListAdmins(ListAdminsRequest) returns (ListAdminsResponse);
+  rpc InviteAdmin(InviteAdminRequest) returns (InviteAdminResponse);
+  rpc RevokeAdmin(RevokeAdminRequest) returns (RevokeAdminResponse);
+  rpc ReactivateAdmin(ReactivateAdminRequest) returns (ReactivateAdminResponse);
+  // ChangeMyPassword — promena vlastite lozinke (zahteva current_password ako
+  // has_password = true).
+  rpc ChangeMyPassword(ChangeMyPasswordRequest) returns (ChangeMyPasswordResponse);
+  // NB: cross-admin password reset namerno NE postoji (sigurnosni razlog).
+  // Oporavak zaboravljene lozinke: Google OAuth ili manualni SQL UPDATE
+  // password_hash u bazi.
+}
+
+// AdminRole — RBAC role.
+enum AdminRole {
+  ADMIN_ROLE_UNSPECIFIED = 0;
+  ADMIN_ROLE_ADMIN = 1;
+  ADMIN_ROLE_VIEWER = 2;
+}
+
+// AdminUser — admin nalog (1:1 sa admin_users tabelom).
+message AdminUser {
+  string id = 1;
+  string email = 2;
+  AdminRole role = 3;
+  bool active = 4;
+  google.protobuf.Timestamp created_at = 5;
+  optional google.protobuf.Timestamp last_login_at = 6;
+  optional string invited_by_admin_id = 7;
+  // has_password indikator za UI: true ako admin ima postavljenu lozinku
+  // (moze password login), false ako moze samo OAuth.
+  bool has_password = 8;
+}
+
+// Submission — admin pogled na campaign_submissions red.
+message Submission {
+  string id = 1;
+  google.protobuf.Timestamp created_at = 2;
+  // email: prazno = nije naveden.
+  string email = 3;
+  string name = 4;
+  string surname = 5;
+  string phone = 6;
+  repeated ParticipationRole roles = 7;
+  repeated SocialNetwork networks = 8;
+  bool has_large_reach = 9;
+  optional string large_reach_url = 10;
+  optional string profile_links = 11;
+  bool gdpr_consent = 12;
+}
+
+message GetMeRequest {}
+message GetMeResponse {
+  AdminUser me = 1;
+}
+
+message ListSubmissionsRequest {
+  // search: free-text preko name/surname/email/phone.
+  optional string search = 1;
+  // role_filter: jedna uloga; prijava se poklapa ako je ima medju svojim ulogama.
+  optional ParticipationRole role_filter = 2;
+  // network_filter: jedna mreza; prijava se poklapa ako ju je navela.
+  optional SocialNetwork network_filter = 3;
+  // large_reach_only: kad je true, vraca samo prijave sa has_large_reach = true.
+  optional bool large_reach_only = 4;
+  // page_size: default 50, max 200.
+  int32 page_size = 5;
+  // page_token: opaque keyset cursor (base64 "{created_at},{id}").
+  optional string page_token = 6;
+  // date_from: ISO datum "YYYY-MM-DD" (inkluzivno, pocetak dana UTC).
+  optional string date_from = 7;
+  // date_to: ISO datum "YYYY-MM-DD" (inkluzivno, do kraja tog dana).
+  optional string date_to = 8;
+}
+message ListSubmissionsResponse {
+  repeated Submission submissions = 1;
+  optional string next_page_token = 2;
+  // total_count: ukupno prijava koje zadovoljavaju filtere (bez paginacije).
+  int64 total_count = 3;
+}
+
+message GetSubmissionRequest {
+  string id = 1;
+}
+message GetSubmissionResponse {
+  Submission submission = 1;
+}
+
+message ExportSubmissionsCSVRequest {
+  // Isti filteri kao ListSubmissionsRequest, BEZ paginacije.
+  optional string search = 1;
+  optional ParticipationRole role_filter = 2;
+  optional SocialNetwork network_filter = 3;
+  optional bool large_reach_only = 4;
+  optional string date_from = 5;
+  optional string date_to = 6;
+}
+message ExportSubmissionsCSVResponse {
+  bytes csv = 1;
+  string filename = 2;
+}
+
+message ListAdminsRequest {}
+message ListAdminsResponse {
+  repeated AdminUser admins = 1;
+}
+
+message InviteAdminRequest {
+  string email = 1;
+  AdminRole role = 2;
+  // initial_password (opciono) — ako se postavi, admin moze odmah password login.
+  // Inace samo Google OAuth (radi samo ako je email Gmail koji je whitelisted).
+  // Min 8 karaktera; backend hash-uje sa bcrypt.
+  optional string initial_password = 3;
+}
+message InviteAdminResponse {
+  AdminUser admin = 1;
+}
+
+message RevokeAdminRequest {
+  string id = 1;
+}
+message RevokeAdminResponse {}
+
+message ReactivateAdminRequest {
+  string id = 1;
+}
+message ReactivateAdminResponse {
+  AdminUser admin = 1;
+}
+
+message ChangeMyPasswordRequest {
+  // current_password — obavezan ako has_password = true; inace se ignorise.
+  optional string current_password = 1;
+  // new_password — min 8 karaktera.
+  string new_password = 2;
+}
+message ChangeMyPasswordResponse {}

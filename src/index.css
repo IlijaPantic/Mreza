@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+@theme inline {
+  /* Tipografija — Space Grotesk za naslove (geometrijski, "tehnicki" ton),
+     Inter za telo i UI. */
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* Primarna paleta "mreza" — tirkiz kao boja signala i veze. */
+  --color-mreza-50: #ecfdf9;
+  --color-mreza-100: #d0f8ef;
+  --color-mreza-200: #a4efe1;
+  --color-mreza-300: #6ee0cd;
+  --color-mreza-400: #33c9b4;
+  --color-mreza-500: #14ad9b;
+  --color-mreza-600: #0a8b7e;
+  --color-mreza-700: #0c6f66;
+  --color-mreza-800: #0e5852;
+  --color-mreza-900: #0f4945;
+  --color-mreza-950: #052e2c;
+
+  /* Akcenat "cvor" — indigo za veze izmedju cvorova; koristi se stedljivo,
+     uglavnom u dekorativnoj grafici i hover stanjima. */
+  --color-node-300: #b3b4fb;
+  --color-node-400: #8b8cf9;
+  --color-node-500: #6b6bf0;
+  --color-node-600: #5451dd;
+  --color-node-700: #4640b8;
+}
+
+body {
+  @apply min-h-screen bg-white font-sans text-slate-900 antialiased;
+}
+
+/* Puls cvorova u dekorativnoj mrezi. Amplituda je namerno mala — grafika je
+   pozadina, ne animacija koja vuce paznju sa forme. */
+@keyframes mreza-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    r: var(--node-r, 3);
+  }
+  50% {
+    opacity: 1;
+    r: calc(var(--node-r, 3) * 1.35);
+  }
+}
+
+.mreza-node-pulse {
+  animation: mreza-pulse 4s ease-in-out infinite;
+}
+
+/* Svetlost koja putuje duz veze — sugerise prenos sadrzaja kroz mrezu. */
+@keyframes mreza-dash {
+  to {
+    stroke-dashoffset: -32;
+  }
+}
+
+.mreza-link-flow {
+  stroke-dasharray: 4 12;
+  animation: mreza-dash 3s linear infinite;
+}
+
+/* Korisnici koji su trazili manje pokreta ne dobijaju nijednu od ove dve. */
+@media (prefers-reduced-motion: reduce) {
+  .mreza-node-pulse,
+  .mreza-link-flow {
+    animation: none;
+  }
+}

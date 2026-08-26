@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+package mreza.v1;
+
+option go_package = "git.izbori.xyz/trsr/mreza-anketa/internal/gen/mreza/v1;mrezav1";
+
+// SurveyService — javna prijava za ucesce u medijskoj kampanji.
+// Jedina javna (unauthenticated) usluga u sistemu.
+service SurveyService {
+  rpc Submit(SubmitRequest) returns (SubmitResponse);
+}
+
+// ParticipationRole — nacin na koji se prijavljeni ukljucuje u kampanju.
+// Prijava mora imati bar jednu ulogu.
+enum ParticipationRole {
+  PARTICIPATION_ROLE_UNSPECIFIED = 0;
+  // Kreator medijskog sadrzaja na zadate teme (postovi, videi, reelsovi).
+  PARTICIPATION_ROLE_CONTENT_CREATOR = 1;
+  // Prenosilac medijskog sadrzaja (deljenje postova i pravljenje sopstvenih
+  // na zadate teme).
+  PARTICIPATION_ROLE_CONTENT_SHARER = 2;
+  // Vlasnik drustvenih medija / stranica spreman da deli i kreira sadrzaj
+  // (Facebook i Instagram stranice i profili veceg dometa).
+  PARTICIPATION_ROLE_MEDIA_OWNER = 3;
+  // Ucesnik u usmenoj kampanji ka bliskim ljudima (uz smernice kako da se prica).
+  PARTICIPATION_ROLE_WORD_OF_MOUTH = 4;
+}
+
+// SocialNetwork — mreza koju je prijavljeni spreman da dobrovoljno stavi na
+// raspolaganje kampanji. Lista moze biti prazna.
+enum SocialNetwork {
+  SOCIAL_NETWORK_UNSPECIFIED = 0;
+  SOCIAL_NETWORK_FACEBOOK = 1;
+  SOCIAL_NETWORK_INSTAGRAM = 2;
+  SOCIAL_NETWORK_TIKTOK = 3;
+  SOCIAL_NETWORK_YOUTUBE = 4;
+  SOCIAL_NETWORK_TELEGRAM = 5;
+  SOCIAL_NETWORK_X = 6;
+  SOCIAL_NETWORK_BLOG = 7;
+}
+
+message SubmitRequest {
+  string name = 1;
+  string surname = 2;
+  // email: prazno = nije naveden. Polje je opciono, ali jedinstveno kad postoji
+  // (sluzi kao kljuc za detekciju duplikata).
+  string email = 3;
+  // phone: broj telefona / WhatsApp. Obavezan.
+  string phone = 4;
+  // roles: bar jedna; duplikati se ignorisu.
+  repeated ParticipationRole roles = 5;
+  // networks: moze biti prazno; duplikati se ignorisu.
+  repeated SocialNetwork networks = 6;
+  bool has_large_reach = 7;
+  // large_reach_url: URL medija/profila veceg dometa. Prihvata se samo uz
+  // has_large_reach = true; backend normalizuje na http(s) shemu.
+  optional string large_reach_url = 8;
+  // profile_links: slobodan tekst — linkovi ka profilima/stranicama,
+  // po jedan u redu.
+  optional string profile_links = 9;
+  bool gdpr_consent = 10;
+}
+
+message SubmitResponse {
+  string submission_id = 1;
+}
