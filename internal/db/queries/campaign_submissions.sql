@@ -8,7 +8,6 @@ INSERT INTO campaign_submissions (
   networks,
   has_large_reach,
   large_reach_url,
-  profile_links,
   gdpr_consent
 ) VALUES (
   sqlc.arg(name),
@@ -19,7 +18,6 @@ INSERT INTO campaign_submissions (
   sqlc.arg(networks),
   sqlc.arg(has_large_reach),
   sqlc.narg(large_reach_url),
-  sqlc.narg(profile_links),
   sqlc.arg(gdpr_consent)
 )
 RETURNING
@@ -34,7 +32,6 @@ RETURNING
   networks,
   has_large_reach,
   large_reach_url,
-  profile_links,
   gdpr_consent;
 
 -- name: GetCampaignSubmissionByEmail :one
@@ -50,7 +47,6 @@ SELECT
   networks,
   has_large_reach,
   large_reach_url,
-  profile_links,
   gdpr_consent
 FROM campaign_submissions
 WHERE lower(email) = lower(sqlc.arg(email));

@@ -189,7 +189,6 @@ type Submission struct {
 	Networks      []SocialNetwork     `protobuf:"varint,8,rep,packed,name=networks,proto3,enum=mreza.v1.SocialNetwork" json:"networks,omitempty"`
 	HasLargeReach bool                `protobuf:"varint,9,opt,name=has_large_reach,json=hasLargeReach,proto3" json:"has_large_reach,omitempty"`
 	LargeReachUrl *string             `protobuf:"bytes,10,opt,name=large_reach_url,json=largeReachUrl,proto3,oneof" json:"large_reach_url,omitempty"`
-	ProfileLinks  *string             `protobuf:"bytes,11,opt,name=profile_links,json=profileLinks,proto3,oneof" json:"profile_links,omitempty"`
 	GdprConsent   bool                `protobuf:"varint,12,opt,name=gdpr_consent,json=gdprConsent,proto3" json:"gdpr_consent,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -291,13 +290,6 @@ func (x *Submission) GetHasLargeReach() bool {
 func (x *Submission) GetLargeReachUrl() string {
 	if x != nil && x.LargeReachUrl != nil {
 		return *x.LargeReachUrl
-	}
-	return ""
-}
-
-func (x *Submission) GetProfileLinks() string {
-	if x != nil && x.ProfileLinks != nil {
-		return *x.ProfileLinks
 	}
 	return ""
 }
@@ -1244,7 +1236,7 @@ const file_mreza_v1_admin_proto_rawDesc = "" +
 	"\x13invited_by_admin_id\x18\a \x01(\tH\x01R\x10invitedByAdminId\x88\x01\x01\x12!\n" +
 	"\fhas_password\x18\b \x01(\bR\vhasPasswordB\x10\n" +
 	"\x0e_last_login_atB\x16\n" +
-	"\x14_invited_by_admin_id\"\xe1\x03\n" +
+	"\x14_invited_by_admin_id\"\xba\x03\n" +
 	"\n" +
 	"Submission\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x129\n" +
@@ -1258,11 +1250,9 @@ const file_mreza_v1_admin_proto_rawDesc = "" +
 	"\bnetworks\x18\b \x03(\x0e2\x17.mreza.v1.SocialNetworkR\bnetworks\x12&\n" +
 	"\x0fhas_large_reach\x18\t \x01(\bR\rhasLargeReach\x12+\n" +
 	"\x0flarge_reach_url\x18\n" +
-	" \x01(\tH\x00R\rlargeReachUrl\x88\x01\x01\x12(\n" +
-	"\rprofile_links\x18\v \x01(\tH\x01R\fprofileLinks\x88\x01\x01\x12!\n" +
+	" \x01(\tH\x00R\rlargeReachUrl\x88\x01\x01\x12!\n" +
 	"\fgdpr_consent\x18\f \x01(\bR\vgdprConsentB\x12\n" +
-	"\x10_large_reach_urlB\x10\n" +
-	"\x0e_profile_links\"\x0e\n" +
+	"\x10_large_reach_urlJ\x04\b\v\x10\fR\rprofile_links\"\x0e\n" +
 	"\fGetMeRequest\"4\n" +
 	"\rGetMeResponse\x12#\n" +
 	"\x02me\x18\x01 \x01(\v2\x13.mreza.v1.AdminUserR\x02me\"\xd9\x03\n" +

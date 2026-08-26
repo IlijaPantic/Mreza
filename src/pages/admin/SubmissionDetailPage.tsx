@@ -74,11 +74,6 @@ export function SubmissionDetailPage() {
     );
   }
 
-  const profileLinkLines = (submission.profileLinks ?? "")
-    .split("\n")
-    .map((l) => l.trim())
-    .filter((l) => l !== "");
-
   return (
     <div className="space-y-6">
       <Link
@@ -170,39 +165,15 @@ export function SubmissionDetailPage() {
 
             <div>
               <h3 className="border-b border-slate-200 pb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                Linkovi
+                Medij / profil većeg dometa
               </h3>
-              <div className="mt-3 space-y-3">
-                {submission.largeReachUrl && (
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                      Medij / profil većeg dometa
-                    </p>
-                    <p className="mt-1">
-                      <ExternalLink raw={submission.largeReachUrl} />
-                    </p>
-                  </div>
-                )}
-
-                {profileLinkLines.length > 0 ? (
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                      Profili i stranice
-                    </p>
-                    <ul className="mt-1 space-y-1">
-                      {profileLinkLines.map((link, i) => (
-                        <li key={`${link}-${i}`}>
-                          <ExternalLink raw={link} />
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+              <p className="mt-3">
+                {submission.largeReachUrl ? (
+                  <ExternalLink raw={submission.largeReachUrl} />
                 ) : (
-                  !submission.largeReachUrl && (
-                    <p className="text-sm text-slate-500">—</p>
-                  )
+                  <span className="text-sm text-slate-500">—</span>
                 )}
-              </div>
+              </p>
             </div>
           </section>
         </div>

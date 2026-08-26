@@ -28,11 +28,10 @@ var (
 // Duzinska ogranicenja polja. Backend je autoritet — frontend validacija je
 // samo UX, a rate limit i MaxBodySize hvataju grublje zloupotrebe.
 const (
-	maxNameLen         = 100
-	maxEmailLen        = 254 // RFC 5321 gornja granica za adresu
-	maxPhoneLen        = 20
-	maxLargeReachURL   = 500
-	maxProfileLinksLen = 2000
+	maxNameLen       = 100
+	maxEmailLen      = 254 // RFC 5321 gornja granica za adresu
+	maxPhoneLen      = 20
+	maxLargeReachURL = 500
 )
 
 type SurveyHandler struct {
@@ -108,11 +107,6 @@ func (h *SurveyHandler) Submit(
 		largeReachURL = nil
 	}
 
-	profileLinks, err := optionalText(msg.ProfileLinks, maxProfileLinksLen)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
-	}
-
 	// Provera duplikata pre upisa daje korisniku jasnu poruku umesto
 	// generickog constraint violation-a. Unique index i dalje stiti od trke.
 	if emailPtr != nil {
@@ -134,7 +128,6 @@ func (h *SurveyHandler) Submit(
 		Networks:      networksJSON,
 		HasLargeReach: hasLargeReach,
 		LargeReachUrl: largeReachURL,
-		ProfileLinks:  profileLinks,
 		GdprConsent:   true,
 	})
 	if err != nil {
@@ -159,20 +152,6 @@ func requiredText(raw string, maxLen int, field string) (string, error) {
 		return "", fmt.Errorf("%s exceeds %d characters", field, maxLen)
 	}
 	return s, nil
-}
-
-func optionalText(opt *string, maxLen int) (*string, error) {
-	if opt == nil {
-		return nil, nil
-	}
-	s := strings.TrimSpace(*opt)
-	if s == "" {
-		return nil, nil
-	}
-	if len(s) > maxLen {
-		return nil, fmt.Errorf("field exceeds %d characters", maxLen)
-	}
-	return &s, nil
 }
 
 // optionalURL normalizuje korisnicki unet link i garantuje http(s) shemu.

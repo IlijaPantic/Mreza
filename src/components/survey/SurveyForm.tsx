@@ -10,7 +10,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { FieldError } from "@/components/ui/field-error";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { submit } from "@/gen/mreza/v1/survey-SurveyService_connectquery";
 import type { ParticipationRole, SocialNetwork } from "@/gen/mreza/v1/survey_pb";
 import { cn } from "@/lib/cn";
@@ -29,7 +28,6 @@ import {
   validateLargeReachUrl,
   validateName,
   validatePhone,
-  validateProfileLinks,
   validateRoles,
   type SurveyFormValues,
 } from "@/validators/survey";
@@ -43,7 +41,6 @@ const defaultValues: SurveyFormValues = {
   networks: [],
   hasLargeReach: false,
   largeReachUrl: "",
-  profileLinks: "",
   gdprConsent: false,
 };
 
@@ -97,7 +94,6 @@ export function SurveyForm({ onToast }: SurveyFormProps) {
           largeReachUrl: value.hasLargeReach
             ? trimField(value.largeReachUrl) || undefined
             : undefined,
-          profileLinks: trimField(value.profileLinks) || undefined,
           gdprConsent: value.gdprConsent,
         });
 
@@ -356,34 +352,6 @@ export function SurveyForm({ onToast }: SurveyFormProps) {
             )}
           </form.Field>
 
-          <form.Field
-            name="profileLinks"
-            validators={{
-              onBlur: ({ value }) => validateProfileLinks(value),
-              onSubmit: ({ value }) => validateProfileLinks(value),
-            }}
-          >
-            {(field) => (
-              <div>
-                <Label htmlFor="profileLinks">
-                  Linkovi ka profilima i stranicama
-                </Label>
-                <Textarea
-                  id="profileLinks"
-                  rows={4}
-                  maxLength={LIMITS.profileLinks}
-                  placeholder={"facebook.com/tvoja-stranica\ninstagram.com/tvoj-profil"}
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                />
-                <p className="mt-1 text-xs text-slate-500">
-                  Po jedan link u redu. Opciono.
-                </p>
-                <FieldError message={field.state.meta.errors[0]} />
-              </div>
-            )}
-          </form.Field>
         </section>
 
         <section>

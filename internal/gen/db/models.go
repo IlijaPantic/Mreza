@@ -32,6 +32,5 @@ type CampaignSubmission struct {
 	Networks      []byte
 	HasLargeReach bool
 	LargeReachUrl *string
-	ProfileLinks  *string
 	GdprConsent   bool
 }

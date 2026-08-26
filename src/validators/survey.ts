@@ -23,7 +23,6 @@ export const LIMITS = {
   name: 100,
   email: 254,
   largeReachUrl: 500,
-  profileLinks: 2000,
 } as const;
 
 const EMAIL_RE = /^.+@.+\..+$/;
@@ -39,7 +38,6 @@ export type SurveyFormValues = {
   networks: SocialNetwork[];
   hasLargeReach: boolean;
   largeReachUrl: string;
-  profileLinks: string;
   gdprConsent: boolean;
 };
 
@@ -79,8 +77,8 @@ export function validateRoles(roles: ParticipationRole[]): string | undefined {
 
 /**
  * Link ka mediju veceg dometa. Obavezan je kad je opcija cekirana — inace
- * cekboks ne nosi nijednu upotrebljivu informaciju. Ko nece da ostavi link
- * moze da odcekira opciju i upise ga u "Linkovi ka profilima".
+ * cekboks ne nosi nijednu upotrebljivu informaciju. Ko nece da ostavi link,
+ * ostavlja opciju neoznacenu.
  */
 export function validateLargeReachUrl(
   value: string,
@@ -93,14 +91,6 @@ export function validateLargeReachUrl(
     return VALIDATION_COPY.maxLength(LIMITS.largeReachUrl);
   }
   if (!looksLikeUrl(t)) return VALIDATION_COPY.url;
-  return undefined;
-}
-
-export function validateProfileLinks(value: string): string | undefined {
-  const t = trimField(value);
-  if (t.length > LIMITS.profileLinks) {
-    return VALIDATION_COPY.maxLength(LIMITS.profileLinks);
-  }
   return undefined;
 }
 

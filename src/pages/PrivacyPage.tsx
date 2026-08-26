@@ -22,8 +22,8 @@ const COLLECTED = [
     why: "Da ti šaljemo samo ono što odgovara načinu na koji si izabrao/la da učestvuješ.",
   },
   {
-    what: "Linkovi ka profilima i stranicama",
-    why: "Da procenimo domet i uskladimo sadržaj sa publikom koju već imaš.",
+    what: "Link ka mediju ili profilu većeg dometa",
+    why: "Samo ako sam označiš da ga imaš — da procenimo domet i uskladimo sadržaj sa publikom koju već okupljaš.",
   },
 ];
 

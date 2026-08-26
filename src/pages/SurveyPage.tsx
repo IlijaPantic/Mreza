@@ -35,7 +35,7 @@ export function SurveyPage() {
             Postani <Accent>čvor</Accent> u mreži
           </>
         }
-        lead="Poruka putuje onoliko daleko koliko je ljudi prenese. Prijavi se i biraj kako ćeš da učestvuješ — praviš sadržaj, deliš ga, otvaraš svoje stranice ili jednostavno razgovaraš sa ljudima oko sebe."
+        lead="Mediji su pod kontrolom režima. Zato moramo sami da se organizujemo — svaki profil, svaka stranica i svaki razgovor je kanal do ljudi do kojih informacija drugačije ne stiže. Učešće je u potpunosti dobrovoljno."
       />
 
       <main className="flex-1">

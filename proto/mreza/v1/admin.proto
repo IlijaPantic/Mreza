@@ -61,7 +61,8 @@ message Submission {
   repeated SocialNetwork networks = 8;
   bool has_large_reach = 9;
   optional string large_reach_url = 10;
-  optional string profile_links = 11;
+  reserved 11; // ranije: profile_links (uklonjeno)
+  reserved "profile_links";
   bool gdpr_consent = 12;
 }
 

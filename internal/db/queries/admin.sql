@@ -135,7 +135,6 @@ SELECT
   networks,
   has_large_reach,
   large_reach_url,
-  profile_links,
   gdpr_consent
 FROM campaign_submissions
 WHERE (sqlc.narg(search)::text IS NULL OR name ILIKE '%' || sqlc.narg(search)::text || '%' OR surname ILIKE '%' || sqlc.narg(search)::text || '%' OR email ILIKE '%' || sqlc.narg(search)::text || '%' OR phone ILIKE '%' || sqlc.narg(search)::text || '%')
@@ -161,7 +160,6 @@ SELECT
   networks,
   has_large_reach,
   large_reach_url,
-  profile_links,
   gdpr_consent
 FROM campaign_submissions
 WHERE id = sqlc.arg(id);

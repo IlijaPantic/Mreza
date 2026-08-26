@@ -55,9 +55,8 @@ message SubmitRequest {
   // large_reach_url: URL medija/profila veceg dometa. Prihvata se samo uz
   // has_large_reach = true; backend normalizuje na http(s) shemu.
   optional string large_reach_url = 8;
-  // profile_links: slobodan tekst — linkovi ka profilima/stranicama,
-  // po jedan u redu.
-  optional string profile_links = 9;
+  reserved 9; // ranije: profile_links (uklonjeno)
+  reserved "profile_links";
   bool gdpr_consent = 10;
 }
 

@@ -21,8 +21,8 @@ export function PublicHeader() {
           <span className="sr-only">— početna</span>
         </Link>
 
-        <p className="font-display text-xs font-medium uppercase tracking-[0.2em] text-slate-400 sm:text-sm">
-          Javna kampanja
+        <p className="font-display text-xs font-semibold uppercase tracking-[0.2em] text-mreza-400 sm:text-sm">
+          Studenti pobeđuju
         </p>
       </div>
     </header>
