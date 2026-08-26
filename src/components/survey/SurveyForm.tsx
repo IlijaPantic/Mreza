@@ -27,6 +27,7 @@ import {
   validateGdpr,
   validateLargeReachUrl,
   validateName,
+  validateOrganization,
   validatePhone,
   validateRoles,
   type SurveyFormValues,
@@ -41,6 +42,7 @@ const defaultValues: SurveyFormValues = {
   networks: [],
   hasLargeReach: false,
   largeReachUrl: "",
+  organization: "",
   gdprConsent: false,
 };
 
@@ -94,6 +96,7 @@ export function SurveyForm({ onToast }: SurveyFormProps) {
           largeReachUrl: value.hasLargeReach
             ? trimField(value.largeReachUrl) || undefined
             : undefined,
+          organization: trimField(value.organization) || undefined,
           gdprConsent: value.gdprConsent,
         });
 
@@ -259,6 +262,36 @@ export function SurveyForm({ onToast }: SurveyFormProps) {
                   <p className="mt-1 text-xs text-slate-500">
                     Srpski broj (06…) ili međunarodni za Balkan (+381, +382,
                     +385, +387, +389…)
+                  </p>
+                  <FieldError message={field.state.meta.errors[0]} />
+                </div>
+              )}
+            </form.Field>
+
+            <form.Field
+              name="organization"
+              validators={{
+                onBlur: ({ value }) => validateOrganization(value),
+                onSubmit: ({ value }) => validateOrganization(value),
+              }}
+            >
+              {(field) => (
+                <div className="sm:col-span-2">
+                  <Label htmlFor="organization">
+                    Organizacija, plenum, pokret ili udruženje
+                  </Label>
+                  <Input
+                    id="organization"
+                    maxLength={LIMITS.organization}
+                    placeholder="npr. Plenum studenata FON-a"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                  />
+                  <p className="mt-1 text-xs text-slate-500">
+                    Navedi ako si član neke organizacije, plenuma, pokreta ili
+                    udruženja bliskog studentima, preko kog možemo da te
+                    verifikujemo. Opciono.
                   </p>
                   <FieldError message={field.state.meta.errors[0]} />
                 </div>

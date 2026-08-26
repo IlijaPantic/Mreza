@@ -19,7 +19,8 @@ INSERT INTO campaign_submissions (
   networks,
   has_large_reach,
   large_reach_url,
-  gdpr_consent
+  gdpr_consent,
+  organization
 ) VALUES (
   $1,
   $2,
@@ -29,7 +30,8 @@ INSERT INTO campaign_submissions (
   $6,
   $7,
   $8,
-  $9
+  $9,
+  $10
 )
 RETURNING
   id,
@@ -43,7 +45,8 @@ RETURNING
   networks,
   has_large_reach,
   large_reach_url,
-  gdpr_consent
+  gdpr_consent,
+  organization
 `
 
 type CreateCampaignSubmissionParams struct {
@@ -56,6 +59,7 @@ type CreateCampaignSubmissionParams struct {
 	HasLargeReach bool
 	LargeReachUrl *string
 	GdprConsent   bool
+	Organization  *string
 }
 
 func (q *Queries) CreateCampaignSubmission(ctx context.Context, arg CreateCampaignSubmissionParams) (CampaignSubmission, error) {
@@ -69,6 +73,7 @@ func (q *Queries) CreateCampaignSubmission(ctx context.Context, arg CreateCampai
 		arg.HasLargeReach,
 		arg.LargeReachUrl,
 		arg.GdprConsent,
+		arg.Organization,
 	)
 	var i CampaignSubmission
 	err := row.Scan(
@@ -84,6 +89,7 @@ func (q *Queries) CreateCampaignSubmission(ctx context.Context, arg CreateCampai
 		&i.HasLargeReach,
 		&i.LargeReachUrl,
 		&i.GdprConsent,
+		&i.Organization,
 	)
 	return i, err
 }
@@ -101,7 +107,8 @@ SELECT
   networks,
   has_large_reach,
   large_reach_url,
-  gdpr_consent
+  gdpr_consent,
+  organization
 FROM campaign_submissions
 WHERE lower(email) = lower($1)
 `
@@ -122,6 +129,7 @@ func (q *Queries) GetCampaignSubmissionByEmail(ctx context.Context, email string
 		&i.HasLargeReach,
 		&i.LargeReachUrl,
 		&i.GdprConsent,
+		&i.Organization,
 	)
 	return i, err
 }

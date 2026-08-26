@@ -58,6 +58,9 @@ message SubmitRequest {
   reserved 9; // ranije: profile_links (uklonjeno)
   reserved "profile_links";
   bool gdpr_consent = 10;
+  // organization: organizacija / plenum / pokret / udruzenje blisko studentima,
+  // preko kog se prijavljeni moze verifikovati. Opciono, max 50 karaktera.
+  optional string organization = 11;
 }
 
 message SubmitResponse {

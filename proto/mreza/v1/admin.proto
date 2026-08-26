@@ -64,6 +64,8 @@ message Submission {
   reserved 11; // ranije: profile_links (uklonjeno)
   reserved "profile_links";
   bool gdpr_consent = 12;
+  // organization: organizacija preko koje se prijavljeni moze verifikovati.
+  optional string organization = 13;
 }
 
 message GetMeRequest {}

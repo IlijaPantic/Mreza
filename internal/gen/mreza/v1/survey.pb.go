@@ -168,6 +168,9 @@ type SubmitRequest struct {
 	// has_large_reach = true; backend normalizuje na http(s) shemu.
 	LargeReachUrl *string `protobuf:"bytes,8,opt,name=large_reach_url,json=largeReachUrl,proto3,oneof" json:"large_reach_url,omitempty"`
 	GdprConsent   bool    `protobuf:"varint,10,opt,name=gdpr_consent,json=gdprConsent,proto3" json:"gdpr_consent,omitempty"`
+	// organization: organizacija / plenum / pokret / udruzenje blisko studentima,
+	// preko kog se prijavljeni moze verifikovati. Opciono, max 50 karaktera.
+	Organization  *string `protobuf:"bytes,11,opt,name=organization,proto3,oneof" json:"organization,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -265,6 +268,13 @@ func (x *SubmitRequest) GetGdprConsent() bool {
 	return false
 }
 
+func (x *SubmitRequest) GetOrganization() string {
+	if x != nil && x.Organization != nil {
+		return *x.Organization
+	}
+	return ""
+}
+
 type SubmitResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	SubmissionId  string                 `protobuf:"bytes,1,opt,name=submission_id,json=submissionId,proto3" json:"submission_id,omitempty"`
@@ -313,7 +323,7 @@ var File_mreza_v1_survey_proto protoreflect.FileDescriptor
 
 const file_mreza_v1_survey_proto_rawDesc = "" +
 	"\n" +
-	"\x15mreza/v1/survey.proto\x12\bmreza.v1\"\xf2\x02\n" +
+	"\x15mreza/v1/survey.proto\x12\bmreza.v1\"\xac\x03\n" +
 	"\rSubmitRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
 	"\asurname\x18\x02 \x01(\tR\asurname\x12\x14\n" +
@@ -324,8 +334,10 @@ const file_mreza_v1_survey_proto_rawDesc = "" +
 	"\x0fhas_large_reach\x18\a \x01(\bR\rhasLargeReach\x12+\n" +
 	"\x0flarge_reach_url\x18\b \x01(\tH\x00R\rlargeReachUrl\x88\x01\x01\x12!\n" +
 	"\fgdpr_consent\x18\n" +
-	" \x01(\bR\vgdprConsentB\x12\n" +
-	"\x10_large_reach_urlJ\x04\b\t\x10\n" +
+	" \x01(\bR\vgdprConsent\x12'\n" +
+	"\forganization\x18\v \x01(\tH\x01R\forganization\x88\x01\x01B\x12\n" +
+	"\x10_large_reach_urlB\x0f\n" +
+	"\r_organizationJ\x04\b\t\x10\n" +
 	"R\rprofile_links\"5\n" +
 	"\x0eSubmitResponse\x12#\n" +
 	"\rsubmission_id\x18\x01 \x01(\tR\fsubmissionId*\xd0\x01\n" +

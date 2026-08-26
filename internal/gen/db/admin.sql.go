@@ -121,7 +121,8 @@ SELECT
   networks,
   has_large_reach,
   large_reach_url,
-  gdpr_consent
+  gdpr_consent,
+  organization
 FROM campaign_submissions
 WHERE id = $1
 `
@@ -142,6 +143,7 @@ func (q *Queries) GetSubmissionByID(ctx context.Context, id uuid.UUID) (Campaign
 		&i.HasLargeReach,
 		&i.LargeReachUrl,
 		&i.GdprConsent,
+		&i.Organization,
 	)
 	return i, err
 }
@@ -244,7 +246,8 @@ SELECT
   networks,
   has_large_reach,
   large_reach_url,
-  gdpr_consent
+  gdpr_consent,
+  organization
 FROM campaign_submissions
 WHERE ($1::text IS NULL OR name ILIKE '%' || $1::text || '%' OR surname ILIKE '%' || $1::text || '%' OR email ILIKE '%' || $1::text || '%' OR phone ILIKE '%' || $1::text || '%')
   AND ($2::text IS NULL OR roles ? $2::text)
@@ -303,6 +306,7 @@ func (q *Queries) ListSubmissionsForAdmin(ctx context.Context, arg ListSubmissio
 			&i.HasLargeReach,
 			&i.LargeReachUrl,
 			&i.GdprConsent,
+			&i.Organization,
 		); err != nil {
 			return nil, err
 		}

@@ -492,6 +492,7 @@ func submissionToProto(row dbgen.CampaignSubmission) (*mrezav1.Submission, error
 		Networks:      networks,
 		HasLargeReach: row.HasLargeReach,
 		LargeReachUrl: row.LargeReachUrl,
+		Organization:  row.Organization,
 		GdprConsent:   row.GdprConsent,
 	}
 	if row.CreatedAt.Valid {
@@ -560,7 +561,7 @@ func buildSubmissionsCSV(rows []dbgen.CampaignSubmission) ([]byte, error) {
 	if err := w.Write([]string{
 		"ID", "Datum", "Ime", "Prezime", "Email", "Telefon",
 		"Uloge", "Društvene mreže", "Veći domet", "Link većeg dometa",
-		"Saglasnost",
+		"Organizacija", "Saglasnost",
 	}); err != nil {
 		return nil, err
 	}
@@ -589,6 +590,7 @@ func buildSubmissionsCSV(rows []dbgen.CampaignSubmission) ([]byte, error) {
 			networksPretty,
 			boolLabel(row.HasLargeReach),
 			derefString(row.LargeReachUrl),
+			derefString(row.Organization),
 			boolLabel(row.GdprConsent),
 		}
 		if err := w.Write(record); err != nil {

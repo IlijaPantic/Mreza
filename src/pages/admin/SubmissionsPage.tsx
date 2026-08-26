@@ -265,6 +265,7 @@ export function SubmissionsPage() {
                 <TableHead>Datum</TableHead>
                 <TableHead>Ime i prezime</TableHead>
                 <TableHead>Kontakt</TableHead>
+                <TableHead>Organizacija</TableHead>
                 <TableHead>Uloge</TableHead>
                 <TableHead>Mreže</TableHead>
                 <TableHead>Domet</TableHead>
@@ -273,7 +274,7 @@ export function SubmissionsPage() {
             <TableBody>
               {submissions.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-slate-500">
+                  <TableCell colSpan={7} className="text-center text-slate-500">
                     {hasActiveFilters
                       ? "Nema prijava za izabrane filtere."
                       : "Još nema nijedne prijave."}
@@ -297,6 +298,9 @@ export function SubmissionsPage() {
                       {s.email && (
                         <span className="block text-slate-500">{s.email}</span>
                       )}
+                    </TableCell>
+                    <TableCell className="max-w-[160px] truncate">
+                      {s.organization || <span className="text-slate-400">—</span>}
                     </TableCell>
                     <TableCell className="max-w-xs">
                       {formatRoles(s.roles)}

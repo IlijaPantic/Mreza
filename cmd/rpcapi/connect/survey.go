@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	"connectrpc.com/connect"
 	"github.com/jackc/pgx/v5"
@@ -32,6 +33,9 @@ const (
 	maxEmailLen      = 254 // RFC 5321 gornja granica za adresu
 	maxPhoneLen      = 20
 	maxLargeReachURL = 500
+	// Kratko ime organizacije, ne slobodan tekst — isto ogranicenje stoji i
+	// kao CHECK na koloni (migracija 000005).
+	maxOrganizationLen = 50
 )
 
 type SurveyHandler struct {
@@ -107,6 +111,11 @@ func (h *SurveyHandler) Submit(
 		largeReachURL = nil
 	}
 
+	organization, err := optionalText(msg.Organization, maxOrganizationLen)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
 	// Provera duplikata pre upisa daje korisniku jasnu poruku umesto
 	// generickog constraint violation-a. Unique index i dalje stiti od trke.
 	if emailPtr != nil {
@@ -128,6 +137,7 @@ func (h *SurveyHandler) Submit(
 		Networks:      networksJSON,
 		HasLargeReach: hasLargeReach,
 		LargeReachUrl: largeReachURL,
+		Organization:  organization,
 		GdprConsent:   true,
 	})
 	if err != nil {
@@ -152,6 +162,24 @@ func requiredText(raw string, maxLen int, field string) (string, error) {
 		return "", fmt.Errorf("%s exceeds %d characters", field, maxLen)
 	}
 	return s, nil
+}
+
+// optionalText trimuje opciono tekstualno polje i proverava duzinu.
+// Prazan string se tretira kao "nije uneto" (NULL u bazi), ne kao prazan tekst.
+func optionalText(opt *string, maxLen int) (*string, error) {
+	if opt == nil {
+		return nil, nil
+	}
+	s := strings.TrimSpace(*opt)
+	if s == "" {
+		return nil, nil
+	}
+	// Broj znakova, ne bajtova — nasa slova zauzimaju po dva bajta, pa bi
+	// len() neopravdano odbio kratak unos sa kvacicama.
+	if utf8.RuneCountInString(s) > maxLen {
+		return nil, fmt.Errorf("field exceeds %d characters", maxLen)
+	}
+	return &s, nil
 }
 
 // optionalURL normalizuje korisnicki unet link i garantuje http(s) shemu.

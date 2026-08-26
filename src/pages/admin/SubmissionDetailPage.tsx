@@ -108,6 +108,10 @@ export function SubmissionDetailPage() {
               <DetailField label="Prezime" value={submission.surname} />
               <DetailField label="Email" value={submission.email} />
               <DetailField
+                label="Organizacija"
+                value={submission.organization ?? ""}
+              />
+              <DetailField
                 label="Saglasnost"
                 value={submission.gdprConsent ? "Da" : "Ne"}
               />

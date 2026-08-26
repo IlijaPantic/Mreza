@@ -23,6 +23,7 @@ export const LIMITS = {
   name: 100,
   email: 254,
   largeReachUrl: 500,
+  organization: 50,
 } as const;
 
 const EMAIL_RE = /^.+@.+\..+$/;
@@ -38,6 +39,7 @@ export type SurveyFormValues = {
   networks: SocialNetwork[];
   hasLargeReach: boolean;
   largeReachUrl: string;
+  organization: string;
   gdprConsent: boolean;
 };
 
@@ -91,6 +93,15 @@ export function validateLargeReachUrl(
     return VALIDATION_COPY.maxLength(LIMITS.largeReachUrl);
   }
   if (!looksLikeUrl(t)) return VALIDATION_COPY.url;
+  return undefined;
+}
+
+/** Kratko ime organizacije, ne slobodan tekst — otud 50 karaktera. */
+export function validateOrganization(value: string): string | undefined {
+  const t = trimField(value);
+  if (t.length > LIMITS.organization) {
+    return VALIDATION_COPY.maxLength(LIMITS.organization);
+  }
   return undefined;
 }
 

@@ -33,4 +33,5 @@ type CampaignSubmission struct {
 	HasLargeReach bool
 	LargeReachUrl *string
 	GdprConsent   bool
+	Organization  *string
 }

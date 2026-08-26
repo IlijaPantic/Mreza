@@ -22,6 +22,10 @@ const COLLECTED = [
     why: "Da ti šaljemo samo ono što odgovara načinu na koji si izabrao/la da učestvuješ.",
   },
   {
+    what: "Organizacija, plenum, pokret ili udruženje",
+    why: "Samo ako sam navedeš — da možemo da potvrdimo ko si preko nekoga ko te već poznaje.",
+  },
+  {
     what: "Link ka mediju ili profilu većeg dometa",
     why: "Samo ako sam označiš da ga imaš — da procenimo domet i uskladimo sadržaj sa publikom koju već okupljaš.",
   },
