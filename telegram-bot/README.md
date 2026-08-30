@@ -145,24 +145,79 @@ python -m venv .venv
 source .venv/bin/activate
 
 pip install -r requirements.txt
+```
+
+### Prvo provera, pa pokretanje
+
+```bash
+python -m bot.main --check
+```
+
+Ovo pregleda podešavanja i **izađe** — ne pokreće bota. Ispiše šta je
+podešeno, koji se kanali preskaču, i za svaki kanal da li je bot administrator
+sa pravom pozivanja:
+
+```
+Cetova podeseno: 3 (TEME, FB, KREATORI)
+Preskace se:     IG, TIKTOK, X, TG, USMENA, VLASNICI  (nepopunjeno u .env)
+
+Prava bota po cetovima
+----------------------------------------
+bot @mreza_kampanja_bot (id=7123456789)
+kanal TEME (-1001234567890): u redu
+
+Sve je u redu. Bot moze da se pokrene.
+```
+
+Ako nešto nije u redu, kaže tačno šta i vrati grešku (izlazni kod 1), pa može
+i u skriptu. Najčešće:
+
+| Poruka | Šta da uradiš |
+|---|---|
+| `NE MOGU DA SE POVEZEM NA TELEGRAM` | `BOT_TOKEN` je pogrešan ili prazan |
+| `bot ne vidi cet` | Bot nije dodat u taj kanal (korak 2) |
+| `bot NIJE administrator` | Dodat je, ali kao običan član |
+| `NEMA pravo 'Pozivanje korisnika'` | Admin je, ali mu je to pravo isključeno |
+
+Kad provera prođe, pokreni bota:
+
+```bash
 python -m bot.main
 ```
 
-Ako je sve u redu, u terminalu piše nešto ovako:
-
-```
-bot @mreza_kampanja_bot (id=7123456789)
-kanal TEME (-1001234567890): u redu
-polling krece (allowed_updates=message,callback_query,chat_member,...)
-```
-
-Ako negde piše **KANAL … NIJE administrator** ili **NEMA pravo 'Pozivanje
-korisnika'** — vrati se na korak 2 za taj kanal. Bot će i dalje raditi, samo
-taj kanal neće moći da izdaje.
-
-Sad otvori svog bota u Telegramu i pošalji `/start`.
-
 Zaustavljanje: `Ctrl+C`.
+
+### Šta provera NE može da vidi
+
+`--check` potvrđuje podešavanja, ali ne i da update-i zaista stižu. To se
+proverava samo rukom, i traje par minuta:
+
+- [ ] Pošalji `/start` — stiže pozdrav sa dugmetom **Počni**
+- [ ] Prođi upitnik — kvačice se menjaju **u istoj poruci**, bez novih poruka
+- [ ] Klikni **Dalje** bez ijedne izabrane uloge — mora iskočiti upozorenje
+- [ ] Potvrdi — stižu linkovi, svaki kao zasebno dugme
+- [ ] Klikni link i uđi u kanal
+- [ ] Pošalji `/stats` — moraš se videti pod **„Ušlo u kanale"**
+      *(ako je prazno, bot ne dobija `chat_member` update-e — najčešće zato
+      što nije administrator u tom kanalu)*
+- [ ] Klikni isti link opet — mora biti potrošen, jednokratni je
+- [ ] Pošalji `/linkovi` — stižu novi linkovi
+- [ ] Ako imaš grupu sa odobravanjem: zahtev stiže u admin grupu sa dugmadima
+- [ ] Pošalji `/start` ponovo — nudi **Ponovo mi pošalji linkove** / **Promeni izbor**
+- [ ] Neka neko ko nije admin pošalje `/stats` — bot mu **ne sme** odgovoriti
+
+### Testiraj na probnom botu, ne na pravom
+
+Napravi **poseban** bot kod @BotFather (npr. `mreza_test_bot`) i dva-tri
+**privatna** kanala u kojima si samo ti. Razlog: `/broadcast` na pravom botu
+šalje poruku svim stvarnim ljudima, a to se ne može povući.
+
+U `.env` za probu koristi i drugu bazu, da se test podaci ne pomešaju sa
+pravima:
+
+```
+DB_PATH=./test.db
+```
 
 ---
 
@@ -187,12 +242,14 @@ nano .env          # popuni kao u koraku 4
 chmod 600 .env     # da .env može da čita samo tvoj korisnik
 ```
 
-Proveri da radi pre nego što ga pustiš kao servis:
+Proveri podešavanja pre nego što ga pustiš kao servis:
 
 ```bash
-.venv/bin/python -m bot.main
-# vidi da li piše "polling krece", pa Ctrl+C
+.venv/bin/python -m bot.main --check
 ```
+
+Mora se završiti sa „Sve je u redu". Tek onda nastavi — ovako se problem sa
+pravima vidi odmah, a ne tek kad prvi čovek pošalje `/start`.
 
 Ako radi, napravi servis koji se sam diže:
 

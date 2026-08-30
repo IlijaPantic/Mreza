@@ -52,6 +52,16 @@ class RedactToken(logging.Filter):
 
 
 def setup_logging() -> None:
+    # Windows konzola podrazumevano nije UTF-8, pa bi nasa slova u logovima
+    # izasla kao smece bas tokom lokalnog testiranja. Na Linuxu je no-op.
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            try:
+                reconfigure(encoding="utf-8")
+            except (ValueError, OSError):
+                pass
+
     fmt = logging.Formatter(
         "%(asctime)s %(levelname)-7s %(name)s: %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
     )
@@ -74,39 +84,51 @@ def setup_logging() -> None:
         handler.addFilter(RedactToken(config.BOT_TOKEN))
 
 
-async def check_permissions(bot: Bot) -> None:
+async def check_permissions(bot: Bot) -> list[str]:
     """Proverava da je bot admin sa pravom pozivanja u svakom konfigurisanom cetu.
 
-    Ne prekida pokretanje — bolje je da bot radi za kanale koji su ispravni
-    nego da odbije da se digne zbog jednog pogresnog ID-a.
+    Vraca listu problema. Pri normalnom pokretanju se samo loguju — bolje je da
+    bot radi za kanale koji su ispravni nego da odbije da se digne zbog jednog
+    pogresnog ID-a. U --check rezimu ista lista odredjuje izlazni kod.
     """
+    problems: list[str] = []
+
     me = await bot.get_me()
     log.info("bot @%s (id=%s)", me.username, me.id)
 
     if not config.CONFIGURED_CHATS:
-        log.warning("NIJEDAN kanal nije konfigurisan — korisnici nece dobiti nijedan link")
-        return
+        problems.append("NIJEDAN kanal nije konfigurisan — korisnici nece dobiti nijedan link")
+        log.warning(problems[-1])
+        return problems
 
     for key, (chat_id, _rule) in config.CONFIGURED_CHATS.items():
         try:
             member = await bot.get_chat_member(chat_id=chat_id, user_id=me.id)
         except TelegramAPIError as exc:
-            log.error("KANAL %s (%s): bot ne moze da procita clanstvo — %s", key, chat_id, exc)
-            log.error("  -> dodaj bota kao ADMINISTRATORA u taj kanal")
+            problems.append(
+                f"{key} ({chat_id}): bot ne vidi cet — dodaj ga kao ADMINISTRATORA. Detalj: {exc}"
+            )
+            log.error(problems[-1])
             continue
 
         if member.status != "administrator":
-            log.error("KANAL %s (%s): bot NIJE administrator (status=%s)", key, chat_id, member.status)
+            problems.append(f"{key} ({chat_id}): bot NIJE administrator (status={member.status})")
+            log.error(problems[-1])
             continue
 
         if not getattr(member, "can_invite_users", False):
-            log.error("KANAL %s (%s): bot je admin ali NEMA pravo 'Pozivanje korisnika'", key, chat_id)
+            problems.append(
+                f"{key} ({chat_id}): bot je admin ali NEMA pravo 'Pozivanje korisnika'"
+            )
+            log.error(problems[-1])
             continue
 
         log.info("kanal %s (%s): u redu", key, chat_id)
 
     if config.ADMIN_GROUP_ID is None:
         log.warning("ADMIN_GROUP_ID nije postavljen — zahtevi za ulazak u grupe se nece prijavljivati")
+
+    return problems
 
 
 def build_dispatcher() -> Dispatcher:
@@ -138,33 +160,93 @@ def build_dispatcher() -> Dispatcher:
     return dp
 
 
-async def main() -> None:
+async def run_check() -> int:
+    """`--check`: pregleda podesavanja i izadje, bez pokretanja pollinga.
+
+    Postoji da bi se pre deploya (i pre `systemctl enable`) videlo da li je
+    sve na mestu, umesto da se to sazna tek kad prvi covek posalje /start.
+    Izlazni kod je 0 samo ako nema nijednog problema — tako se moze staviti
+    u skriptu.
+    """
+    print("Provera podesavanja\n" + "=" * 40)
+    print(f"Baza:            {config.DB_PATH}")
+    print(f"Admina:          {len(config.ADMIN_IDS)}")
+    print(f"Admin grupa:     {config.ADMIN_GROUP_ID or 'NIJE POSTAVLJENA'}")
+    print(f"Politika priv.:  {config.PRIVACY_URL or 'nije postavljena'}")
+    print(f"Trajanje linka:  {config.INVITE_TTL_HOURS}h")
+
+    configured = list(config.CONFIGURED_CHATS)
+    skipped = [r.key for r in config.CHAT_RULES if r.key not in config.CONFIGURED_CHATS]
+    print(f"\nCetova podeseno: {len(configured)} ({', '.join(configured) or '—'})")
+    if skipped:
+        print(f"Preskace se:     {', '.join(skipped)}  (nepopunjeno u .env)")
+
+    bot = Bot(token=config.BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+    try:
+        print("\nPrava bota po cetovima\n" + "-" * 40)
+        problems = await check_permissions(bot)
+    except TelegramAPIError as exc:
+        print(f"\nNE MOGU DA SE POVEZEM NA TELEGRAM: {exc}")
+        print("Najverovatnije je BOT_TOKEN pogresan ili nije popunjen.")
+        return 1
+    finally:
+        await bot.session.close()
+
+    print("\n" + "=" * 40)
+    if problems:
+        print(f"PROBLEMA: {len(problems)}\n")
+        for item in problems:
+            print(f"  • {item}")
+        print("\nUputstvo: README.md, korak 2 (dodavanje bota kao administratora).")
+        return 1
+
+    print("Sve je u redu. Bot moze da se pokrene.")
+    print("\nSto ova provera NE moze da vidi — proveri rucno:")
+    print("  1. posalji /start botu i prodji ceo upitnik")
+    print("  2. klikni na izdati link i udji u kanal")
+    print("  3. posalji /stats — mora te prikazati pod 'Uslo u kanale'")
+    print("     (ako je prazno, bot ne dobija chat_member update-e)")
+    return 0
+
+
+async def main() -> int:
     setup_logging()
-    log.info("pokretanje…")
+
+    check_only = "--check" in sys.argv
+    log.info("pokretanje%s…", " (samo provera)" if check_only else "")
 
     await db.connect(config.DB_PATH)
-
-    bot = Bot(
-        token=config.BOT_TOKEN,
-        default=DefaultBotProperties(parse_mode=ParseMode.HTML),
-    )
-    dp = build_dispatcher()
-
     try:
-        await check_permissions(bot)
-        await admin.warn_unfinished_broadcast(bot)
+        if check_only:
+            return await run_check()
 
-        # drop_pending_updates: posle pada ne obradjuj gomilu zaostalih tapova.
-        log.info("polling krece (allowed_updates=%s)", ",".join(ALLOWED_UPDATES))
-        await dp.start_polling(bot, allowed_updates=ALLOWED_UPDATES, drop_pending_updates=True)
+        bot = Bot(
+            token=config.BOT_TOKEN,
+            default=DefaultBotProperties(parse_mode=ParseMode.HTML),
+        )
+        dp = build_dispatcher()
+        try:
+            await check_permissions(bot)
+            await admin.warn_unfinished_broadcast(bot)
+
+            # drop_pending_updates: posle pada ne obradjuj gomilu zaostalih tapova.
+            log.info("polling krece (allowed_updates=%s)", ",".join(ALLOWED_UPDATES))
+            await dp.start_polling(
+                bot, allowed_updates=ALLOWED_UPDATES, drop_pending_updates=True
+            )
+        finally:
+            await bot.session.close()
+        return 0
     finally:
         await db.close()
-        await bot.session.close()
         log.info("ugasen")
 
 
 if __name__ == "__main__":
+    # SystemExit se NE hvata ovde — inace bi `except` progutao izlazni kod
+    # i --check bi uvek vracao 0, pa provera ne bi mogla u skriptu.
     try:
-        asyncio.run(main())
-    except (KeyboardInterrupt, SystemExit):
-        pass
+        exit_code = asyncio.run(main())
+    except KeyboardInterrupt:
+        exit_code = 0
+    sys.exit(exit_code)
