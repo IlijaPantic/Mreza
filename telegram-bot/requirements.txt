@@ -1,0 +1,4 @@
+# Verzije protiv kojih je kod pisan i testiran.
+aiogram>=3.13,<4
+aiosqlite>=0.20,<1
+python-dotenv>=1.0,<2

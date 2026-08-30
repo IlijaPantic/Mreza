@@ -1,0 +1,38 @@
+# systemd unit za Mreza Telegram bota.
+#
+# Instalacija (kao root):
+#   cp deploy/bot.service /etc/systemd/system/mreza-bot.service
+#   nano /etc/systemd/system/mreza-bot.service   # proveri User i putanje
+#   systemctl daemon-reload
+#   systemctl enable --now mreza-bot
+
+[Unit]
+Description=Mreza Telegram bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=deploy
+Group=deploy
+WorkingDirectory=/home/deploy/mreza-bot
+ExecStart=/home/deploy/mreza-bot/.venv/bin/python -m bot.main
+
+# Bot se sam podize ako padne. RestartSec sprecava vrtenje u krug
+# kad je greska trajna (npr. pogresan token).
+Restart=always
+RestartSec=10
+
+# Logovi idu u journald (journalctl -u mreza-bot), pored bot.log fajla.
+StandardOutput=journal
+StandardError=journal
+
+# Osnovno ogranicavanje: bot nema razloga da pise igde osim u svoj folder.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/deploy/mreza-bot
+
+[Install]
+WantedBy=multi-user.target
