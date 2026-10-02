@@ -127,6 +127,27 @@ async def check_permissions(bot: Bot) -> list[str]:
 
     if config.ADMIN_GROUP_ID is None:
         log.warning("ADMIN_GROUP_ID nije postavljen — zahtevi za ulazak u grupe se nece prijavljivati")
+        return problems
+
+    # Bot mora biti clan admin grupe da bi mogao da posalje zahtev za ulazak.
+    # Bez ove provere kvar je nevidljiv: covek trazi ulazak, nista ne pukne,
+    # a obavestenje jednostavno ne stigne nikome.
+    try:
+        member = await bot.get_chat_member(chat_id=config.ADMIN_GROUP_ID, user_id=me.id)
+        if member.status in ("left", "kicked"):
+            problems.append(
+                f"ADMIN GRUPA ({config.ADMIN_GROUP_ID}): bot NIJE clan — "
+                "zahtevi za ulazak nece stizati nikome"
+            )
+            log.error(problems[-1])
+        else:
+            log.info("admin grupa (%s): u redu", config.ADMIN_GROUP_ID)
+    except TelegramAPIError as exc:
+        problems.append(
+            f"ADMIN GRUPA ({config.ADMIN_GROUP_ID}): bot ne vidi grupu — "
+            f"dodaj ga kao clana. Detalj: {exc}"
+        )
+        log.error(problems[-1])
 
     return problems
 

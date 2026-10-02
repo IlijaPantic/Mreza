@@ -17,6 +17,7 @@ CB_NET = "net"
 CB_STEP = "step"
 CB_JOIN_REQUEST = "jr"
 CB_BROADCAST = "bc"
+CB_INFO = "info"
 
 # Koraci
 STEP_ROLES = "roles"
@@ -26,6 +27,7 @@ STEP_DONE = "done"
 STEP_BACK = "back"
 STEP_RELINK = "relink"
 STEP_RESTART = "restart"
+STEP_SKIP_VERIFY = "skipverify"
 
 CHECKED = "✅"
 UNCHECKED = "☐"
@@ -43,12 +45,19 @@ def start_keyboard() -> InlineKeyboardMarkup:
 
 
 def roles_keyboard(selected: set[str]) -> InlineKeyboardMarkup:
+    # Svaka uloga ima svoje "i" dugme, u istom redu.
+    # Telegram deli sirinu reda podjednako, pa nazivu ostaje pola ekrana —
+    # zato ovde ide KRATAK naziv. Pun stoji u tekstu poruke iznad.
     rows = [
         [
             InlineKeyboardButton(
-                text=_checkbox(texts.ROLE_LABELS[key], key in selected),
+                text=_checkbox(texts.ROLE_SHORT_LABELS[key], key in selected),
                 callback_data=f"{CB_ROLE}:{key}",
-            )
+            ),
+            InlineKeyboardButton(
+                text=texts.BUTTONS["role_info"],
+                callback_data=f"{CB_INFO}:{key}",
+            ),
         ]
         for key in config.ROLE_KEYS
     ]
@@ -56,6 +65,20 @@ def roles_keyboard(selected: set[str]) -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text=texts.BUTTONS["next"], callback_data=f"{CB_STEP}:{STEP_NETWORKS}")]
     )
     return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def back_to_roles_keyboard() -> InlineKeyboardMarkup:
+    """Jedno dugme nazad, sa ekrana sa objasnjenjima na izbor uloga."""
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text=texts.BUTTONS["back"],
+                    callback_data=f"{CB_STEP}:{STEP_ROLES}",
+                )
+            ]
+        ]
+    )
 
 
 def networks_keyboard(selected: set[str]) -> InlineKeyboardMarkup:
@@ -77,6 +100,25 @@ def networks_keyboard(selected: set[str]) -> InlineKeyboardMarkup:
         ]
     )
     return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def skip_keyboard(step: str) -> InlineKeyboardMarkup:
+    """Jedno dugme "Preskoči" uz pitanje sa slobodnim tekstom.
+
+    Odgovori su namerno neobavezni: ko ih preskoci, admin ga prosto ne odobri
+    kad stigne zahtev za ulazak. Bolje nego da covek odustane na pola upitnika
+    zato sto mora nesto da kuca.
+    """
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text=texts.BUTTONS["skip"],
+                    callback_data=f"{CB_STEP}:{step}",
+                )
+            ]
+        ]
+    )
 
 
 def summary_keyboard() -> InlineKeyboardMarkup:

@@ -209,6 +209,11 @@ async def on_join_request(event: ChatJoinRequest) -> None:
             ", ".join(texts.NETWORK_LABELS.get(n, n) for n in sorted(networks)) or "—"
         ),
         source=texts.escape(row["source"] if row else "—"),
+        # Ovo je odgovor zbog kojeg zahtev i ide na rucno odobrenje — admin
+        # ga mora videti pre nego sto pritisne Odobri.
+        verification=texts.escape(
+            (row["verification"] if row else None) or "— preskočeno —"
+        ),
     )
 
     await event.bot.send_message(

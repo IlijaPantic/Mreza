@@ -24,9 +24,12 @@ CREATE TABLE IF NOT EXISTS users (
   username      TEXT,
   first_name    TEXT,
   source        TEXT,
-  status        TEXT,           -- started | roles | networks | completed | blocked
+  status        TEXT,           -- started | roles | networks | verify | completed | blocked
   created_at    TEXT,
-  updated_at    TEXT
+  updated_at    TEXT,
+  -- Slobodan tekst, pita se samo one koji izaberu odgovarajucu ulogu.
+  -- Sluzi adminu da odluci hoce li odobriti ulazak u grupu.
+  verification  TEXT            -- kreator: ko je, gde je aktivan, ko ga potvrdjuje
 );
 
 CREATE TABLE IF NOT EXISTS user_roles (
@@ -89,6 +92,22 @@ def days_ago_iso(days: int) -> str:
     return (datetime.now(timezone.utc) - timedelta(days=days)).isoformat(timespec="seconds")
 
 
+async def _ensure_columns(conn: aiosqlite.Connection) -> None:
+    """Dodaje kolone koje fale u vec postojecoj bazi.
+
+    CREATE TABLE IF NOT EXISTS ne dira tabelu koja vec postoji, pa bi baza
+    napravljena pre ove izmene ostala bez novih kolona. Nema alata za
+    migracije — ovo je najjednostavnije sto radi ispravno.
+    """
+    async with conn.execute("PRAGMA table_info(users)") as cur:
+        existing = {row["name"] for row in await cur.fetchall()}
+    for column in ("verification",):
+        if column not in existing:
+            # Ime kolone je konstanta iz koda, ne korisnicki unos.
+            await conn.execute(f"ALTER TABLE users ADD COLUMN {column} TEXT")
+            log.info("baza: dodata kolona users.%s", column)
+
+
 async def connect(db_path: str) -> aiosqlite.Connection:
     """Otvara konekciju i primenjuje semu. Poziva se jednom, pri startu."""
     global _db
@@ -100,6 +119,7 @@ async def connect(db_path: str) -> aiosqlite.Connection:
     await conn.execute("PRAGMA busy_timeout=5000")
     await conn.execute("PRAGMA foreign_keys=ON")
     await conn.executescript(SCHEMA)
+    await _ensure_columns(conn)
     await conn.commit()
     _db = conn
     log.info("baza otvorena: %s", db_path)
@@ -220,6 +240,14 @@ async def get_networks(telegram_id: int) -> set[str]:
         "SELECT network FROM user_networks WHERE telegram_id = ?", (telegram_id,)
     ) as cur:
         return {row["network"] for row in await cur.fetchall()}
+
+
+async def set_verification(telegram_id: int, value: str | None) -> None:
+    await db().execute(
+        "UPDATE users SET verification = ?, updated_at = ? WHERE telegram_id = ?",
+        (value, now_iso(), telegram_id),
+    )
+    await db().commit()
 
 
 # ------------------------------------------------------------ pozivnice
@@ -351,6 +379,7 @@ async def export_rows() -> list[dict[str, object]]:
           u.source,
           u.status,
           u.created_at,
+          u.verification,
           (SELECT group_concat(role, ' | ')     FROM user_roles    r WHERE r.telegram_id = u.telegram_id) AS roles,
           (SELECT group_concat(network, ' | ')  FROM user_networks n WHERE n.telegram_id = u.telegram_id) AS networks,
           (SELECT group_concat(chat_key, ' | ') FROM memberships   m WHERE m.telegram_id = u.telegram_id) AS chats

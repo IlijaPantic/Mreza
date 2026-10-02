@@ -14,13 +14,16 @@ baze koja se posebno instalira — bot je jedan proces i jedan fajl baze.
 ## Šta bot radi
 
 1. Čovek otvori `t.me/TVOJ_BOT` (ili sa oznakom izvora: `t.me/TVOJ_BOT?start=fb`)
-2. Bira **kako želi da učestvuje** — jedna ili više od četiri uloge
+2. Bira **kako želi da učestvuje** — jedna ili više od tri uloge
 3. Bira **koje društvene mreže ima** — može i da preskoči
 4. Vidi rekapitulaciju i potvrdi
 5. Dobija jednokratne linkove za kanale koji mu pripadaju
 
-Za grupe **Kreatori** i **Vlasnici stranica** ulazak odobrava organizator ručno
-— zahtev stigne u admin grupu sa dugmadima Odobri / Odbij.
+Za grupu **Kreatori** ulazak odobrava organizator ručno — zahtev stigne u
+admin grupu sa dugmadima Odobri / Odbij.
+
+> Uloga „vlasnik društvenih medija i stranica" i grupa **Vlasnici** su za sada
+> izbačene iz bota — ta grupa se još ne pokreće. Web forma i dalje nudi tu ulogu.
 
 ### Ko ide u koji kanal
 
@@ -34,7 +37,6 @@ Za grupe **Kreatori** i **Vlasnici stranica** ulazak odobrava organizator ručno
 | označio Telegram | Telegram ekipa |
 | uloga „usmena kampanja" | Usmena kampanja |
 | uloga „kreator sadržaja" | Kreatori *(grupa, ručno odobrenje)* |
-| uloga „vlasnik stranica" | Vlasnici *(grupa, ručno odobrenje)* |
 
 YouTube i Blog se pamte u bazi, ali za sada nemaju svoj kanal.
 
@@ -72,8 +74,8 @@ Za **svaki** kanal i grupu iz tabele gore:
 
    Ovo je jedino pravo koje mu je neophodno. Ostalo možeš da isključiš.
 
-4. Za grupe **Kreatori** i **Vlasnici** dodatno: kanal/grupa mora biti
-   **privatna** da bi ulazak preko zahteva imao smisla
+4. Za grupu **Kreatori** dodatno: grupa mora biti **privatna** da bi ulazak
+   preko zahteva imao smisla
 
 Isto uradi i za **admin grupu** — grupu u kojoj vi organizatori odobravate
 zahteve. Tu botu treba samo da može da šalje poruke.
@@ -159,7 +161,7 @@ sa pravom pozivanja:
 
 ```
 Cetova podeseno: 3 (TEME, FB, KREATORI)
-Preskace se:     IG, TIKTOK, X, TG, USMENA, VLASNICI  (nepopunjeno u .env)
+Preskace se:     IG, TIKTOK, X, TG, USMENA  (nepopunjeno u .env)
 
 Prava bota po cetovima
 ----------------------------------------

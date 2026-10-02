@@ -102,6 +102,7 @@ async def cmd_export(message: Message) -> None:
             "prijavljen",
             "uloge",
             "mreže",
+            "o sebi",
             "kanali",
         ]
     )
@@ -116,6 +117,7 @@ async def cmd_export(message: Message) -> None:
                 row["created_at"] or "",
                 row["roles"] or "",
                 row["networks"] or "",
+                row["verification"] or "",
                 row["chats"] or "",
             ]
         )

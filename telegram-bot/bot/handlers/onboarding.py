@@ -3,6 +3,12 @@
 Stanje NIJE u memoriji nego u bazi (users.status + user_roles + user_networks).
 Zato korisnik koji ode na pola i vrati se za dva dana nastavlja tacno odakle
 je stao, i zato restart bota ne gubi nicije izbore.
+
+Tok:
+    start -> roles -> networks -> [verify] -> summary -> linkovi
+
+Korak u uglastim zagradama je uslovan — pita se samo onaj ko je izabrao
+ulogu za koju admin rucno odobrava ulazak u grupu (kreator).
 """
 
 from __future__ import annotations
@@ -26,9 +32,15 @@ router = Router(name="onboarding")
 SOURCE_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 DEFAULT_SOURCE = "direct"
 
+# Gornja granica za slobodan tekst. Par recenica staje lako; ovo je tu da
+# neko ne zalepi ceo roman u bazu.
+MAX_ANSWER_LEN = 1000
+
 STATUS_STARTED = "started"
 STATUS_ROLES = "roles"
 STATUS_NETWORKS = "networks"
+STATUS_VERIFY = "verify"
+STATUS_SUMMARY = "summary"
 STATUS_COMPLETED = "completed"
 
 
@@ -55,6 +67,21 @@ async def _edit_or_send(message: Message, text: str, markup) -> None:
         await message.answer(text, reply_markup=markup)
 
 
+async def _show(message: Message, text: str, markup, *, edit: bool) -> None:
+    """Prikazi korak.
+
+    Kad korak stize od klika na dugme, poruka se menja u mestu. Kad stize
+    posle korisnikovog teksta, nema sta da se menja — salje se nova.
+    """
+    if edit:
+        await _edit_or_send(message, text, markup)
+    else:
+        await message.answer(text, reply_markup=markup)
+
+
+# ------------------------------------------------------------------ tekstovi
+
+
 def roles_text() -> str:
     lines = [texts.TEXTS["roles_title"], texts.TEXTS["roles_subtitle"], ""]
     for key in config.ROLE_KEYS:
@@ -68,22 +95,31 @@ def networks_text() -> str:
     return f"{texts.TEXTS['networks_title']}\n{texts.TEXTS['networks_subtitle']}"
 
 
-def summary_text(roles: set[str], networks: set[str]) -> str:
+def summary_text(roles: set[str], networks: set[str], row) -> str:
     role_lines = [texts.role_line(k) for k in config.ROLE_KEYS if k in roles]
     net_names = [texts.network_line(k) for k in config.NETWORK_KEYS if k in networks]
-    return "\n".join(
-        [
-            texts.TEXTS["summary_title"],
+
+    parts = [
+        texts.TEXTS["summary_title"],
+        "",
+        texts.TEXTS["summary_roles"],
+        *role_lines,
+        "",
+        texts.TEXTS["summary_networks"],
+        ", ".join(net_names) if net_names else texts.TEXTS["summary_networks_none"],
+    ]
+
+    # Dodatni odgovor se prikazuje samo onome koga su i pitali.
+    if config.ROLE_CREATOR in roles:
+        answer = row["verification"] if row else None
+        parts += [
             "",
-            texts.TEXTS["summary_roles"],
-            *role_lines,
-            "",
-            texts.TEXTS["summary_networks"],
-            ", ".join(net_names) if net_names else texts.TEXTS["summary_networks_none"],
-            "",
-            texts.TEXTS["summary_question"],
+            texts.TEXTS["summary_verification"],
+            texts.escape(answer) if answer else texts.TEXTS["summary_not_answered"],
         ]
-    )
+
+    parts += ["", texts.TEXTS["summary_question"]]
+    return "\n".join(parts)
 
 
 def welcome_text() -> str:
@@ -91,6 +127,33 @@ def welcome_text() -> str:
         texts.TEXTS["consent_with_link"] if config.PRIVACY_URL else texts.TEXTS["consent"]
     )
     return f"{texts.TEXTS['welcome']}\n\n{consent}"
+
+
+# --------------------------------------------------------------- napredovanje
+
+
+async def _advance(message: Message, user_id: int, after: str, *, edit: bool) -> None:
+    """Odlucuje koji je sledeci korak posle `after` i prikazuje ga.
+
+    Jedno mesto koje zna redosled — pozivaju ga i dugmad i tekstualni odgovori,
+    pa se tok ne moze razici izmedju ta dva puta.
+    """
+    roles = await db.get_roles(user_id)
+
+    if after == "networks" and config.ROLE_CREATOR in roles:
+        await db.set_status(user_id, STATUS_VERIFY)
+        await _show(
+            message,
+            texts.TEXTS["verify_ask"],
+            kb.skip_keyboard(kb.STEP_SKIP_VERIFY),
+            edit=edit,
+        )
+        return
+
+    await db.set_status(user_id, STATUS_SUMMARY)
+    networks = await db.get_networks(user_id)
+    row = await db.get_user(user_id)
+    await _show(message, summary_text(roles, networks, row), kb.summary_keyboard(), edit=edit)
 
 
 # ------------------------------------------------------------------ /start
@@ -113,16 +176,28 @@ async def cmd_start(message: Message, command: CommandObject) -> None:
         await message.answer(texts.TEXTS["returning"], reply_markup=kb.returning_keyboard())
         return
 
-    # Nastavi odakle je stao: ko je vec presao na mreze ne mora ponovo kroz uvod.
+    # Nastavi odakle je stao — bez ponovnog prolaska kroz uvod.
     if status == STATUS_NETWORKS:
         selected = await db.get_networks(user.id)
         await message.answer(networks_text(), reply_markup=kb.networks_keyboard(selected))
+        return
+    if status == STATUS_VERIFY:
+        await message.answer(
+            texts.TEXTS["verify_ask"], reply_markup=kb.skip_keyboard(kb.STEP_SKIP_VERIFY)
+        )
+        return
+    if status == STATUS_SUMMARY:
+        roles = await db.get_roles(user.id)
+        networks = await db.get_networks(user.id)
+        await message.answer(
+            summary_text(roles, networks, row), reply_markup=kb.summary_keyboard()
+        )
         return
 
     await message.answer(welcome_text(), reply_markup=kb.start_keyboard())
 
 
-# ------------------------------------------------------------ koraci
+# ------------------------------------------------------------ uloge i mreze
 
 
 @router.callback_query(F.data == f"{kb.CB_STEP}:{kb.STEP_ROLES}")
@@ -146,11 +221,24 @@ async def toggle_role(callback: CallbackQuery) -> None:
     selected = await db.get_roles(callback.from_user.id)
     if isinstance(callback.message, Message):
         try:
-            # Samo tastatura se menja — tekst pitanja ostaje isti, pa nema
-            # potrebe slati novu poruku niti prepisivati ceo tekst.
+            # Samo tastatura se menja — tekst pitanja ostaje isti.
             await callback.message.edit_reply_markup(reply_markup=kb.roles_keyboard(selected))
         except TelegramBadRequest:
             pass
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith(f"{kb.CB_INFO}:"))
+async def role_info(callback: CallbackQuery) -> None:
+    """Objasnjenje jedne uloge, sa dugmetom nazad na izbor."""
+    key = (callback.data or "").split(":", 1)[1]
+    detail = texts.ROLE_DETAILS.get(key)
+    if detail is None:
+        await callback.answer()
+        return
+
+    if isinstance(callback.message, Message):
+        await _edit_or_send(callback.message, detail, kb.back_to_roles_keyboard())
     await callback.answer()
 
 
@@ -187,20 +275,32 @@ async def toggle_network(callback: CallbackQuery) -> None:
     await callback.answer()
 
 
+# ------------------------------------------------------- dodatna pitanja
+
+
 @router.callback_query(F.data == f"{kb.CB_STEP}:{kb.STEP_CONFIRM}")
 async def step_confirm(callback: CallbackQuery) -> None:
+    """Posle mreza — vodi na uslovna pitanja ili pravo na rekapitulaciju."""
     user = callback.from_user
     roles = await db.get_roles(user.id)
     if not roles:
         await callback.answer(texts.TEXTS["roles_none_selected"], show_alert=False)
         return
 
-    networks = await db.get_networks(user.id)
     if isinstance(callback.message, Message):
-        await _edit_or_send(
-            callback.message, summary_text(roles, networks), kb.summary_keyboard()
-        )
+        await _advance(callback.message, user.id, "networks", edit=True)
     await callback.answer()
+
+
+@router.callback_query(F.data == f"{kb.CB_STEP}:{kb.STEP_SKIP_VERIFY}")
+async def skip_verify(callback: CallbackQuery) -> None:
+    await db.set_verification(callback.from_user.id, None)
+    if isinstance(callback.message, Message):
+        await _advance(callback.message, callback.from_user.id, "verify", edit=True)
+    await callback.answer()
+
+
+# ------------------------------------------------------- rekapitulacija
 
 
 @router.callback_query(F.data == f"{kb.CB_STEP}:{kb.STEP_BACK}")
@@ -229,7 +329,7 @@ async def step_done(callback: CallbackQuery) -> None:
 
 @router.callback_query(F.data == f"{kb.CB_STEP}:{kb.STEP_RESTART}")
 async def step_restart(callback: CallbackQuery) -> None:
-    """Promena izbora: izbori ostaju kao polazna tacka, status se vraca unazad."""
+    """Promena izbora: izbori ostaju kao polazna tacka, status ide unazad."""
     user = callback.from_user
     await db.set_status(user.id, STATUS_ROLES)
     selected = await db.get_roles(user.id)
@@ -238,12 +338,12 @@ async def step_restart(callback: CallbackQuery) -> None:
     await callback.answer()
 
 
-# ------------------------------------------------ korisnik kuca umesto da klikne
+# ------------------------------------------------ korisnik salje tekst
 
 
 @router.message(F.chat.type == "private", ~F.text.startswith("/"))
-async def fallback_text(message: Message) -> None:
-    """Blago vraca korisnika na korak na kom je stao."""
+async def on_text(message: Message) -> None:
+    """Prima odgovor na dodatno pitanje; inace blago vraca na tekuci korak."""
     user = message.from_user
     if user is None:
         return
@@ -251,9 +351,39 @@ async def fallback_text(message: Message) -> None:
     row = await db.get_user(user.id)
     status = row["status"] if row else None
 
+    if status == STATUS_VERIFY:
+        answer = (message.text or "").strip()
+
+        if not answer:
+            # Slika, nalepnica, glasovna — ponovi pitanje umesto da cutis.
+            await message.answer(
+                texts.TEXTS["verify_ask"], reply_markup=kb.skip_keyboard(kb.STEP_SKIP_VERIFY)
+            )
+            return
+
+        if len(answer) > MAX_ANSWER_LEN:
+            await message.answer(
+                texts.TEXTS["answer_too_long"].format(max=MAX_ANSWER_LEN)
+            )
+            return
+
+        await db.set_verification(user.id, answer)
+        await _advance(message, user.id, "verify", edit=False)
+        return
+
     if status == STATUS_COMPLETED:
         await message.answer(texts.TEXTS["returning"], reply_markup=kb.returning_keyboard())
         return
+
+    if status == STATUS_SUMMARY:
+        roles = await db.get_roles(user.id)
+        networks = await db.get_networks(user.id)
+        await message.answer(
+            f"{texts.TEXTS['use_buttons']}\n\n{summary_text(roles, networks, row)}",
+            reply_markup=kb.summary_keyboard(),
+        )
+        return
+
     if status == STATUS_NETWORKS:
         selected = await db.get_networks(user.id)
         await message.answer(
@@ -261,6 +391,7 @@ async def fallback_text(message: Message) -> None:
             reply_markup=kb.networks_keyboard(selected),
         )
         return
+
     if status == STATUS_ROLES:
         selected = await db.get_roles(user.id)
         await message.answer(

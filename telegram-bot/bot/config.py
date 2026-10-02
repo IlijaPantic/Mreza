@@ -20,13 +20,13 @@ load_dotenv()
 # --- Kljucevi uloga (moraju se poklapati sa callback_data "role:<kljuc>") ---
 ROLE_CREATOR = "creator"
 ROLE_SHARER = "sharer"
-ROLE_PAGEOWNER = "pageowner"
 ROLE_VERBAL = "verbal"
 
+# Uloga "vlasnik drustvenih medija i stranica" (i grupa VLASNICI) je namerno
+# izbacena dok se ta grupa ne pokrene. Web forma je i dalje nudi.
 ROLE_KEYS: tuple[str, ...] = (
     ROLE_CREATOR,
     ROLE_SHARER,
-    ROLE_PAGEOWNER,
     ROLE_VERBAL,
 )
 
@@ -67,6 +67,9 @@ class ChatRule:
 
 # Redosled ovde je i redosled dugmadi u poruci sa linkovima.
 CHAT_RULES: tuple[ChatRule, ...] = (
+    # Bez requires_* — ova dva kanala dobija svako ko zavrsi upitnik.
+    # Obavestenja: sta stab porucuje. Teme: sta ljudi preuzimaju i dele dalje.
+    ChatRule(key="OBAVESTENJA", env_var="CHANNEL_OBAVESTENJA"),
     ChatRule(key="TEME", env_var="CHANNEL_TEME"),
     ChatRule(key="FB", env_var="CHANNEL_FB", requires_network=NET_FACEBOOK),
     ChatRule(key="IG", env_var="CHANNEL_IG", requires_network=NET_INSTAGRAM),
@@ -74,18 +77,12 @@ CHAT_RULES: tuple[ChatRule, ...] = (
     ChatRule(key="X", env_var="CHANNEL_X", requires_network=NET_X),
     ChatRule(key="TG", env_var="CHANNEL_TG", requires_network=NET_TELEGRAM),
     ChatRule(key="USMENA", env_var="CHANNEL_USMENA", requires_role=ROLE_VERBAL),
-    # Grupe: ulazak preko zahteva koji admin rucno odobrava.
+    # Grupa: ulazak preko zahteva koji admin rucno odobrava.
     ChatRule(
         key="KREATORI",
         env_var="GROUP_KREATORI",
         join_request=True,
         requires_role=ROLE_CREATOR,
-    ),
-    ChatRule(
-        key="VLASNICI",
-        env_var="GROUP_VLASNICI",
-        join_request=True,
-        requires_role=ROLE_PAGEOWNER,
     ),
 )
 
